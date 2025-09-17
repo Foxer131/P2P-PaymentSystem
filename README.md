@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Resumo dos Protocolos de Comunicação P2P
 Este documento descreve os três principais protocolos de comunicação utilizados no projeto P2P, cada um desenhado para uma funcionalidade específica: Autenticação, Pagamento Simples e Troca Atómica.
 
@@ -81,3 +82,7 @@ Confirmação Final (Servidor -> Cliente): Quando o servidor recebe o AGREED, a 
 Mensagem: COMMIT_SUCCESS
 
 Execução Final (Lógica do Cliente): Quando o cliente recebe o COMMIT_SUCCESS, ele também executa a troca na sua Carteira. Neste ponto, a transação está concluída para ambos os lados.
+=======
+# P2P-PaymentSystem
+Peer to peer transaction system in java, with password and RSA authentication
+>>>>>>> 89d86cc43c3af55df9e128397c4751655e2766e2
