@@ -1,88 +1,82 @@
-<<<<<<< HEAD
-Resumo dos Protocolos de Comunicação P2P
-Este documento descreve os três principais protocolos de comunicação utilizados no projeto P2P, cada um desenhado para uma funcionalidade específica: Autenticação, Pagamento Simples e Troca Atómica.
+Sistema de Pagamento e Troca P2P em Java
+Este é um sistema P2P (Peer-to-Peer) completo, construído em Java, que permite aos utilizadores realizar transações financeiras e trocas atómicas de bens e valores de forma segura. O projeto foi desenvolvido a partir do zero, focando numa arquitetura robusta, separação de responsabilidades e protocolos de rede seguros.
 
-1. Protocolo de Handshake e Autenticação
-Este é o primeiro protocolo executado em qualquer nova conexão para estabelecer uma identidade verificada ou um nível de confiança.
+[Imagem de um diagrama de rede P2P]
 
-Objetivo: Permitir que o servidor (recetor) saiba como o cliente (remetente) deseja autenticar-se e executar o processo de verificação apropriado.
+✨ Funcionalidades Principais
+Múltiplos Utilizadores: A configuração dos utilizadores é carregada dinamicamente a partir de um ficheiro users.json, tornando o sistema flexível e fácil de gerir.
 
-Fluxo:
+Dois Modos de Transação:
 
-Handshake Inicial (Cliente -> Servidor): O cliente envia a sua intenção como a primeira mensagem.
+Pagamento Simples (enviar): Transferência monetária direta entre utilizadores.
 
-RSA_AUTH_REQUEST|nome_do_remetente: Indica que o cliente deseja usar a sua chave privada para uma autenticação forte.
+Troca Atómica (troca): Uma funcionalidade avançada que permite a troca de bens por valores (ex: "Carro" por 1000) de forma segura, usando um protocolo de Confirmação de Duas Fases (Two-Phase Commit) para garantir que a transação ou é concluída por ambos os lados, ou é abortada sem perdas.
 
-PASS_AUTH_REQUEST: Indica que o cliente não vai usar uma chave e que o servidor deve recorrer ao método de verificação manual (pedir ao utilizador para aceitar/recusar).
+Sistema de Autenticação Duplo:
 
-Processo de Autenticação (Servidor <-> Cliente):
+Autenticação por Chave RSA: O método preferencial e mais seguro. Usa um protocolo de "Desafio-Resposta" para verificar a identidade sem nunca transmitir segredos pela rede.
 
-Se for RSA: O servidor inicia o protocolo de Desafio-Resposta gerido pelo SecureAuthenticator.
+Autenticação por Senha: Um método de fallback para transações onde a segurança RSA não está disponível, com um sistema de aceitação manual pelo recetor.
 
-O Servidor envia um desafio aleatório, criptografado com a chave pública do cliente.
+Geração de Chaves RSA: Os utilizadores podem gerar os seus próprios pares de chaves pública/privada diretamente através da aplicação.
 
-O Cliente usa a sua chave privada para descriptografar o desafio.
+🛠️ Arquitetura e Tecnologias
+O projeto está estruturado numa arquitetura de 3 camadas para garantir a separação de responsabilidades:
 
-O Cliente calcula um hash (MD5) do desafio e envia-o de volta.
+Camada de Apresentação/Entrada (cli): ArgumentParser para uma análise robusta dos comandos da linha de comando.
 
-O Servidor compara o hash recebido com o esperado e envia AUTH_SUCCESS ou AUTH_FAILURE.
+Camada de Domínio (domain): As classes Pessoa e Carteira contêm a lógica de negócio pura.
 
-Se for Senha/Manual: O servidor simplesmente pergunta ao seu utilizador no terminal se deseja aceitar a conexão não segura.
+Camada de Rede (network): Inclui PaymentSender, TransactionHandler, ExchangeListener, etc., que gerem toda a comunicação de baixo nível com Sockets Java, threads e protocolos de comunicação personalizados.
 
-2. Protocolo de Pagamento Simples
-Um protocolo simples, de uma só fase, para transferências monetárias diretas.
+Camada de Segurança (security): Contém a implementação do algoritmo RSA e do protocolo de autenticação segura.
 
-Objetivo: Enviar um valor monetário de um utilizador para outro.
+Linguagem: Java
 
-Fluxo:
+Comunicação de Rede: Sockets Java (java.net.Socket, java.net.ServerSocket)
 
-Pedido de Transferência (Cliente -> Servidor): Após uma autenticação bem-sucedida, o cliente envia a sua intenção de pagamento.
+Concorrência: Java Threads para lidar com múltiplos clientes simultaneamente.
 
-Mensagem: TRANSFER|valor:[quantia]|remetente:[nome]
+Configuração: Leitura de dados de utilizadores a partir de um ficheiro users.json com a biblioteca Gson da Google.
 
-Exemplo: TRANSFER|valor:50.00|remetente:foxer
+Criptografia: Implementação do RSA com BigInteger e um protocolo de Desafio-Resposta com hash MD5.
 
-Confirmação (Servidor -> Cliente): O servidor processa o depósito e envia uma única mensagem de confirmação.
+🚀 Como Executar
+Pré-requisitos
+JDK (Java Development Kit) 11 ou superior.
 
-SUCCESS: Se o depósito foi bem-sucedido.
+Git.
 
-ERROR|MOTIVO: Se ocorreu um problema.
+Compilação
+Clone o repositório: git clone https://github.com/seu-utilizador/seu-repositorio.git
 
-3. Protocolo de Troca Atómica
-Este é o protocolo mais complexo, desenhado para garantir que uma troca de bens e/ou valores seja justa e "atómica" (ou acontece por completo, ou não acontece de todo), usando um modelo de Confirmação de Duas Fases (Two-Phase Commit).
+Navegue para a pasta do projeto.
 
-Objetivo: Permitir a troca segura de um bem por valor, ou de um bem por outro bem, entre dois utilizadores, sem o risco de uma das partes perder o seu item se a conexão falhar.
+Descarregue o ficheiro gson.jar e coloque-o numa pasta lib/.
 
-Fluxo:
+Compile o projeto (a partir da raiz do projeto):
 
-Fase 0: Autenticação: A conexão é primeiro estabelecida e autenticada usando o Protocolo de Handshake.
+javac -cp "bin;lib/*" -d bin src/com/p2ppayment/**/*.java
 
-Fase 1 (Proposta e Acordo):
+Execução
+Todos os comandos são executados a partir da pasta raiz do projeto.
 
-Proposta (Cliente -> Servidor): O cliente envia a sua proposta de troca completa.
+1. Gerar Chaves (Primeira vez):
 
-Mensagem: EXCHANGE|enviar|bem:Carro|esperar|valor:1000|remetente:foxer
+java -cp "bin;lib/*" com.p2ppayment.Main <nome_utilizador> gerar-chaves
 
-Matchmaking (Lógica do Servidor): O servidor (ExchangeHandler) compara a proposta recebida com a proposta do seu próprio utilizador (o anfitrião). Se não corresponderem, ele envia ABORT|PROPOSTA_INCOMPATIVEL.
+2. Iniciar um Recetor de Pagamentos:
 
-Validação de Recursos (Lógica do Servidor): Se as propostas corresponderem, o servidor verifica se ele próprio tem os recursos que prometeu (o bem ou o valor). Se não tiver, envia ABORT|RECURSOS_INSUFICIENTES_DO_ANFITRIAO.
+java -cp "bin;lib/*" com.p2ppayment.Main <nome_utilizador> receber --port 9090
 
-Sinal de Preparação (Servidor -> Cliente): Se tudo estiver correto, o servidor sinaliza que está pronto para se comprometer.
+3. Iniciar um Anfitrião de Troca:
 
-Mensagem: PREPARE_COMMIT
+java -cp "bin;lib/*" com.p2ppayment.Main <nome_utilizador> troca --oferecer-bem "Item" --pedir-valor 100
 
-Acordo (Cliente -> Servidor): O cliente recebe o PREPARE_COMMIT, verifica os seus próprios recursos e, se estiver tudo em ordem, envia o seu acordo final.
+4. Enviar um Pagamento (com chave RSA):
 
-Mensagem: AGREED (ou ABORT se ele próprio não tiver os recursos).
+java -cp "bin;lib/*" com.p2ppayment.Main <seu_utilizador> enviar --destino <outro_utilizador>@localhost:9090 --valor 50 --chave <seu_utilizador>.key
 
-Fase 2 (Execução Irreversível):
+5. Juntar-se a uma Troca (com chave RSA):
 
-Confirmação Final (Servidor -> Cliente): Quando o servidor recebe o AGREED, a transação é considerada bloqueada. Ele executa a troca na sua Carteira (remove o seu bem, adiciona o valor, etc.) e envia a confirmação final.
-
-Mensagem: COMMIT_SUCCESS
-
-Execução Final (Lógica do Cliente): Quando o cliente recebe o COMMIT_SUCCESS, ele também executa a troca na sua Carteira. Neste ponto, a transação está concluída para ambos os lados.
-=======
-# P2P-PaymentSystem
-Peer to peer transaction system in java, with password and RSA authentication
->>>>>>> 89d86cc43c3af55df9e128397c4751655e2766e2
+java -cp "bin;lib/*" com.p2ppayment.Main <seu_utilizador> troca --destino <outro_utilizador>@localhost:6050 --oferecer-valor 100 --pedir-bem "Item" --chave <seu_utilizador>.key
