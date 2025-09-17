@@ -1,0 +1,21 @@
+[
+  {
+    "nome": "foxer",
+    "password": "pass123",
+    "saldoInicial": 2000.0,
+    "bens": [
+      "Carro Antigo",
+      "Colecao de Selos"
+    ]
+  },
+  {
+    "nome": "maria",
+    "password": "senha456",
+    "saldoInicial": 500.0,
+    "bens": [
+      "Quadro Raro",
+      "Joia de Familia"
+    ]
+  }
+]
+
