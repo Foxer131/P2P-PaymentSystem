@@ -1,6 +1,8 @@
-package com.p2ppayment.network;
+package com.p2ppayment.network.exchange;
 
 import com.p2ppayment.domain.Carteira;
+import com.p2ppayment.network.authprocess.AuthenticationHandler;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;

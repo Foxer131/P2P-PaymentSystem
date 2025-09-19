@@ -1,4 +1,4 @@
-package com.p2ppayment.network;
+package com.p2ppayment.network.transaction;
 
 import com.p2ppayment.domain.Carteira;
 import com.p2ppayment.security.RSA;

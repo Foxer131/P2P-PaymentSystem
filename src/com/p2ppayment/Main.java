@@ -6,8 +6,8 @@ import java.lang.reflect.Type;
 import com.p2ppayment.cli.ArgumentParser;
 import com.p2ppayment.config.UserConfig;
 import com.p2ppayment.domain.Pessoa;
-import com.p2ppayment.network.PaymentListener;
-import com.p2ppayment.network.PaymentSender;
+import com.p2ppayment.network.transaction.PaymentListener;
+import com.p2ppayment.network.transaction.PaymentSender;
 import com.p2ppayment.security.RSA;
 import java.io.FileReader;
 import java.io.Reader;
@@ -15,8 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.ArrayList;
-import com.p2ppayment.network.ExchangeSender;
-import com.p2ppayment.network.ExchangeListener;
+import com.p2ppayment.network.exchange.ExchangeSender;
+import com.p2ppayment.network.exchange.ExchangeListener;
 
 public class Main {
 

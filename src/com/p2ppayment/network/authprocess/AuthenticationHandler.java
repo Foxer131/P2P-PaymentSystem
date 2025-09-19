@@ -1,4 +1,4 @@
-package com.p2ppayment.network;
+package com.p2ppayment.network.authprocess;
 
 import com.p2ppayment.security.RSA;
 import java.io.BufferedReader;
@@ -25,8 +25,8 @@ public class AuthenticationHandler {
                     System.out.println("Recebido pedido de autenticação RSA de: " + nomeRemetente);
                     RSA.PublicKey chavePublicaRemetente = chavesPublicasConhecidas.get(nomeRemetente);
                     if (chavePublicaRemetente != null) {
-                        SecureAuthenticator authenticator = new SecureAuthenticator();
-                        autenticado = authenticator.authenticateAsServer(in, out, chavePublicaRemetente);
+                        IauthProcess authenticator = new SecureAuthenticator(in, out, null, chavePublicaRemetente);
+                        autenticado = authenticator.authenticateAsServer();
                     } else {
                         System.err.println("Chave pública para '" + nomeRemetente + "' não encontrada. Recusando autenticação.");
                     }
@@ -52,8 +52,8 @@ public class AuthenticationHandler {
             
             try {
                 RSA.PrivateKey minhaChavePrivada = RSA.loadPrivateKey(caminhoChavePrivada);
-                SecureAuthenticator authenticator = new SecureAuthenticator();
-                autenticado = authenticator.authenticateAsClient(in, out, minhaChavePrivada);
+                IauthProcess authenticator = new SecureAuthenticator(in, out, minhaChavePrivada, null);
+                autenticado = authenticator.authenticateAsClient();
             } catch (Exception e) {
                 System.err.println("Erro ao carregar a chave privada: " + e.getMessage());
             }
