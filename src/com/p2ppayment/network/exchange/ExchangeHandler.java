@@ -22,6 +22,7 @@ public class ExchangeHandler implements Runnable {
 
     public ExchangeHandler(Socket socket, Carteira carteira, Map<String, RSA.PublicKey> chavesPublicas,
                            String anfitriaoOfereceBem, double anfitriaoOfereceValor, String anfitriaoPedeBem, double anfitriaoPedeValor) {
+
         this.clientSocket = socket;
         this.carteira = carteira;
         this.chavesPublicasConhecidas = chavesPublicas;
@@ -122,9 +123,9 @@ public class ExchangeHandler implements Runnable {
                     carteira.adicionarBem(this.anfitriaoPedeBem);
                 }
 
+                out.println("COMMIT_SUCCESS");
                 System.out.println("Troca concluída com sucesso.");
                 carteira.showCarteira();
-                out.println("COMMIT_SUCCESS");
             } else {
                 System.out.println("Troca abortada pelo parceiro: " + nomeRemetente);
             }

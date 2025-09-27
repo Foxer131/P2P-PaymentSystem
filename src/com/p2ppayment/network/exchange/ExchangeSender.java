@@ -2,7 +2,6 @@ package com.p2ppayment.network.exchange;
 
 import com.p2ppayment.domain.Carteira;
 import com.p2ppayment.network.authprocess.AuthenticationHandler;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -17,7 +16,7 @@ public class ExchangeSender {
     }
 
     public void enviar(String destinoHost, int port, String nomeRemetente, String caminhoChavePrivada,
-                       String bem, int valor, String bemEsperado, int valorEsperado) {
+                       String bem, double valor, String bemEsperado, double valorEsperado) {
 
         boolean euEnvioBem = (bem != null && valorEsperado > 0);
         boolean euEnvioValor = (valor > 0 && bemEsperado != null);

@@ -2,19 +2,22 @@ package com.p2ppayment;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
+import java.io.*;
 import java.lang.reflect.Type;
 import com.p2ppayment.cli.ArgumentParser;
 import com.p2ppayment.config.UserConfig;
 import com.p2ppayment.domain.Pessoa;
+import com.p2ppayment.filegenerators.cnab400Generator;
+import com.p2ppayment.fileparsers.FileParser;
+import com.p2ppayment.fileparsers.TransacaoCobranca;
+import com.p2ppayment.fileparsers.cnab400Parser;
 import com.p2ppayment.network.transaction.PaymentListener;
 import com.p2ppayment.network.transaction.PaymentSender;
 import com.p2ppayment.security.RSA;
-import java.io.FileReader;
-import java.io.Reader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.ArrayList;
+
+import java.util.*;
+
 import com.p2ppayment.network.exchange.ExchangeSender;
 import com.p2ppayment.network.exchange.ExchangeListener;
 
@@ -38,17 +41,15 @@ public class Main {
             }
 
             switch (comando) {
-                case "enviar" -> {
+                case "enviar" ->
                     executarEnvio(utilizadorAtual, parser);
-                }
                 case "receber" -> {
                     System.out.println("--- A INICIAR MODO RECETOR PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
                     PaymentListener listener = new PaymentListener(utilizadorAtual.getCarteira(), parser.getPort(), Main.chavesPublicasConhecidas);
                     new Thread(listener).start();
                 }
-                case "gerar-chaves" -> {
+                case "gerar-chaves" ->
                     utilizadorAtual.gerarEsalvarChaves();
-                }
                 case "troca" -> {
                     if (parser.getHost() == null) {
                         System.out.println("--- A INICIAR MODO DE ANFITRIÃO DE TROCA PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
@@ -72,40 +73,51 @@ public class Main {
                         executarTroca(utilizadorAtual, parser);
                     }
                 }
+                case "gerar-cobranca" -> {
+                    if (parser.getInputFilePath() == null) {
+                        System.err.println("Erro: O comando 'gerar-cobranca' requer a flag --arquivo <caminho_csv>.");
+                        break;
+                    }
+
+                    try {
+                        List<TransacaoCobranca> transacoes = lerCobrancasDeCsv(parser.getInputFilePath());
+
+                        cnab400Generator cnab = new cnab400Generator(parser.getInputFilePath());
+                        try {
+                            cnab.generate(transacoes, "cnab400Remessa.txt");
+                        } catch (IOException ex) {
+                            System.err.println(ex.getMessage());
+                        }
+                    } catch (IOException e) {
+                        System.err.println("Erro ao ler arquivo: " + e.getMessage());
+                    }
+                }
+                case "processa-cobranca" -> {
+                    if (parser.getInputFilePath() == null) {
+                        System.out.println("Erro: O comando 'processa-cobranca' requer a flag --arquivo <caminho_cnab400>");
+                    }
+                    System.out.println("Lendo arquivo CNAB400.");
+
+                    try {
+                        FileParser<TransacaoCobranca> fParser = new cnab400Parser(parser.getInputFilePath());
+                        List<TransacaoCobranca> lista = fParser.parse();
+                        for (TransacaoCobranca t : lista) {
+                            System.out.printf("Boleto N.º: %s | Status: %s | Valor: %.2f%n",
+                                    t.nossoNumero(), t.status(), t.valor());
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Erro ao ler arquivo: " + e.getMessage());
+                    }
+                }
                 default -> {
                     System.err.println("Comando desconhecido: " + comando);
                     ArgumentParser.printHelp();
-                    break;
                 }
             }
         } catch (IllegalArgumentException e) {
             System.err.println("Erro nos argumentos: " + e.getMessage());
             ArgumentParser.printHelp();
         }
-    }
-
-    private static void executarEnvio(Pessoa utilizadorAtual, ArgumentParser parser) {
-        String caminhoChavePrivada = parser.getPrivateKeyPath();
-        
-        if (caminhoChavePrivada == null) {
-            System.out.printf("Autenticação por senha para '%s': ", utilizadorAtual.getNome());
-            Scanner scanner = new Scanner(System.in);
-            String inputPassword = scanner.nextLine();
-            if (!utilizadorAtual.autenticarComSenha(inputPassword)) {
-                System.err.println("Autenticação por senha falhou. A encerrar.");
-                return;
-            }
-            System.out.println("Autenticação bem-sucedida.");
-        }
-
-        PaymentSender sender = new PaymentSender(utilizadorAtual.getCarteira());
-        sender.enviar(
-            parser.getHost(),
-            parser.getPort(),
-            parser.getValue(),
-            utilizadorAtual.getNome(),
-            caminhoChavePrivada        
-            );
     }
 
     private static void inicializarUtilizadores() {
@@ -155,9 +167,55 @@ public class Main {
             utilizadorAtual.getNome(),
             parser.getPrivateKeyPath(),
             parser.getOferecerBem(),
-            (int) parser.getOferecerValor(),
+            parser.getOferecerValor(),
             parser.getPedirBem(),
-            (int) parser.getPedirValor()
+            parser.getPedirValor()
         );
+    }
+
+    private static void executarEnvio(Pessoa utilizadorAtual, ArgumentParser parser) {
+        String caminhoChavePrivada = parser.getPrivateKeyPath();
+
+        if (caminhoChavePrivada == null) {
+            System.out.printf("Autenticação por senha para '%s': ", utilizadorAtual.getNome());
+            Scanner scanner = new Scanner(System.in);
+            String inputPassword = scanner.nextLine();
+            if (!utilizadorAtual.autenticarComSenha(inputPassword)) {
+                System.err.println("Autenticação por senha falhou. A encerrar.");
+                return;
+            }
+            System.out.println("Autenticação bem-sucedida.");
+        }
+
+        PaymentSender sender = new PaymentSender(utilizadorAtual.getCarteira());
+        sender.enviar(
+                parser.getHost(),
+                parser.getPort(),
+                parser.getValue(),
+                utilizadorAtual.getNome(),
+                caminhoChavePrivada
+        );
+    }
+
+    private static List<TransacaoCobranca> lerCobrancasDeCsv(String filePath) throws IOException {
+        List<TransacaoCobranca> cobrancas = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            br.readLine(); // Pula a linha do cabeçalho
+            String linha;
+            while ((linha = br.readLine()) != null) {
+                String[] dados = linha.split(",");
+                // Cria um objeto TransacaoCobranca a partir dos dados do CSV.
+                TransacaoCobranca t = new TransacaoCobranca(
+                        dados[4], // nossoNumero
+                        dados[0], // nomeSacado
+                        Double.parseDouble(dados[2]), // valor
+                        dados[3], // dataVencimento
+                        dados[1], // CPF
+                        null    // status (não aplicável para remessa)
+                );
+                cobrancas.add(t);
+            }
+        }
+        return cobrancas;
     }
 }
