@@ -1,1 +1,1 @@
-This folder will contain implementations for more precisa exception handling.
+This folder will contain implementations for more precise exception handling.
