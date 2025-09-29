@@ -1,6 +1,7 @@
 package com.p2ppayment.network.exchange;
 
 import com.p2ppayment.domain.Carteira;
+import com.p2ppayment.network.BlankCardSender;
 import com.p2ppayment.network.authprocess.AuthenticationHandler;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -8,7 +9,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Locale;
 
-public class ExchangeSender {
+public class ExchangeSender extends BlankCardSender {
     private final Carteira carteira;
 
     public ExchangeSender(Carteira carteira) {
@@ -32,18 +33,18 @@ public class ExchangeSender {
             
             System.out.println("Conexão estabelecida com " + destinoHost + ":" + port);
 
-            boolean autenticado = AuthenticationHandler.handleClientAuthentication(nomeRemetente, caminhoChavePrivada, in, out);
-            if (!autenticado) {
+            if (!performAuthentication(in, out, nomeRemetente, caminhoChavePrivada)) {
                 System.err.println("Falha na autenticação. A fechar conexão.");
                 return;
             }
+
             System.out.println("Autenticação bem-sucedida. A enviar proposta de troca.");
 
             String mensagemTroca;
             if (euEnvioBem) {
-                mensagemTroca = String.format(Locale.US, "EXCHANGE|enviar|bem:%s|esperar|valor:%d|remetente:%s", bem, valorEsperado, nomeRemetente);
+                mensagemTroca = String.format(Locale.US, "EXCHANGE|enviar|bem:%s|esperar|valor:%.2f|remetente:%s", bem, valorEsperado, nomeRemetente);
             } else { 
-                mensagemTroca = String.format(Locale.US, "EXCHANGE|enviar|valor:%d|esperar|bem:%s|remetente:%s", valor, bemEsperado, nomeRemetente);
+                mensagemTroca = String.format(Locale.US, "EXCHANGE|enviar|valor:%.2f|esperar|bem:%s|remetente:%s", valor, bemEsperado, nomeRemetente);
             }
             out.println(mensagemTroca);
 

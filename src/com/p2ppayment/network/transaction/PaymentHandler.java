@@ -1,24 +1,21 @@
 package com.p2ppayment.network.transaction;
 
 import com.p2ppayment.domain.Carteira;
-import com.p2ppayment.network.authprocess.AuthenticationHandler;
-import com.p2ppayment.security.RSA;
+import com.p2ppayment.network.BlankCardHandler;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Map;
 
-public class TransactionHandler implements Runnable {
+public class PaymentHandler extends BlankCardHandler implements Runnable {
 
     private final Socket clientSocket;
     private final Carteira carteira;
-    private final Map<String, RSA.PublicKey> chavesPublicasConhecidas;
 
-    public TransactionHandler(Socket socket, Carteira carteira, Map<String, RSA.PublicKey> chavesPublicas) {
+    public PaymentHandler(Socket socket, Carteira carteira) {
         this.clientSocket = socket;
         this.carteira = carteira;
-        this.chavesPublicasConhecidas = chavesPublicas;
     }
 
     @Override
@@ -27,10 +24,7 @@ public class TransactionHandler implements Runnable {
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
         ) {
-            String handshake = in.readLine();
-            boolean autenticado = AuthenticationHandler.handleServerAuthentication(handshake, in, out, chavesPublicasConhecidas, clientSocket);
-            if (!autenticado) {
-                clientSocket.close();
+            if (!performAuthentication(in, out, clientSocket)) {
                 return;
             }
 
@@ -41,10 +35,12 @@ public class TransactionHandler implements Runnable {
                 String[] parts = inputLine.split("\\|");
                 double valor = 0;
                 for (String part : parts) {
-                    if (part.startsWith("valor:")) {
-                        valor = Double.parseDouble(part.split(":")[1]);
-                    } else if (part.startsWith("remetente:")) {
-                        nomeRemetente = part.split(":")[1];
+                    String[] _p = part.split(":");
+                    switch (_p[0]) {
+                        case "valor" ->
+                            valor = Double.parseDouble(_p[1]);
+                        case "remetente" ->
+                            nomeRemetente = _p[1];
                     }
                 }
                 if (valor > 0) {
@@ -57,6 +53,7 @@ public class TransactionHandler implements Runnable {
                     out.println("ERROR");
                 }                
             } else {
+                System.out.println("Invalid protocol.");
                  out.println("ERROR");
             }
 

@@ -38,9 +38,7 @@ public class Carteira {
         this.bens.add(bem);
     }
 
-    public synchronized boolean removerBem(String bem) {
-        return this.bens.remove(bem);
-    }
+    public synchronized boolean removerBem(String bem) { return this.bens.remove(bem); }
 
     // Método de verificação útil para a lógica de troca
     public synchronized boolean temBem(String bem) {

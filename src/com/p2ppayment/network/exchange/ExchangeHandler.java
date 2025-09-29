@@ -1,6 +1,7 @@
 package com.p2ppayment.network.exchange;
 
 import com.p2ppayment.domain.Carteira;
+import com.p2ppayment.network.BlankCardHandler;
 import com.p2ppayment.network.authprocess.AuthenticationHandler;
 import com.p2ppayment.security.RSA;
 import java.io.BufferedReader;
@@ -10,53 +11,42 @@ import java.net.Socket;
 import java.util.Map;
 import java.util.Objects;
 
-public class ExchangeHandler implements Runnable {
+public class ExchangeHandler extends BlankCardHandler {
     private final Socket clientSocket;
     private final Carteira carteira;
-    private final Map<String, RSA.PublicKey> chavesPublicasConhecidas;
     
     private final String anfitriaoOfereceBem;
     private final double anfitriaoOfereceValor;
     private final String anfitriaoPedeBem;
     private final double anfitriaoPedeValor;
 
-    public ExchangeHandler(Socket socket, Carteira carteira, Map<String, RSA.PublicKey> chavesPublicas,
+    public ExchangeHandler(Socket socket, Carteira carteira,
                            String anfitriaoOfereceBem, double anfitriaoOfereceValor, String anfitriaoPedeBem, double anfitriaoPedeValor) {
 
         this.clientSocket = socket;
         this.carteira = carteira;
-        this.chavesPublicasConhecidas = chavesPublicas;
         this.anfitriaoOfereceBem = anfitriaoOfereceBem;
         this.anfitriaoOfereceValor = anfitriaoOfereceValor;
         this.anfitriaoPedeBem = anfitriaoPedeBem;
         this.anfitriaoPedeValor = anfitriaoPedeValor;
     }
 
-    @Override
     public void run() {
         try (
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
         ) {
-            String handshake = in.readLine();
-            if (handshake == null) 
+            if (!performAuthentication(in, out, clientSocket)) {
                 return;
-            
+            }
+
             String nomeRemetente = "desconhecido";
-            String[] handshakeParts = handshake.split("\\|");
-            if (handshakeParts[0].equals("RSA_AUTH_REQUEST") && handshakeParts.length > 1) {
-                nomeRemetente = handshakeParts[1];
-            }
-
-            boolean autenticado = AuthenticationHandler.handleServerAuthentication(handshake, in, out, chavesPublicasConhecidas, clientSocket);
-            if (!autenticado) {
-                return; 
-            }
-
             String inputLine = in.readLine();
-            if (inputLine == null || !inputLine.startsWith("EXCHANGE")) 
+            if (inputLine == null || !inputLine.startsWith("EXCHANGE")) {
+                System.out.println("Incompatible protocol.");
                 return;
-            
+            }
+
             double clienteOfereceValor = 0;
             String clienteOfereceBem = null;
             double clientePedeValor = 0;
@@ -82,6 +72,8 @@ public class ExchangeHandler implements Runnable {
                         clienteOfereceBem = bem;
                     else if ("esperar".equals(currentMode)) 
                         clientePedeBem = bem;
+                } else if (part.startsWith("remetente:")) {
+                    nomeRemetente = part.split(":")[1];
                 }
             }
             

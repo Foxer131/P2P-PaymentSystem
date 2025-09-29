@@ -1,4 +1,4 @@
-package com.p2ppayment.fileparsers;
+package com.p2ppayment.transactiontypes;
 
 public record TransacaoCobranca(
         String nossoNumero,

@@ -12,14 +12,14 @@ public class RSAUtils {
      * geramos bytes aleatórios e codificamo-los em Base64, resultando numa string aleatória.
      * @return Uma string de desafio aleatória.
      */
-    public static String generateChallenge() {
+    protected static String generateChallenge() {
         SecureRandom random = new SecureRandom();
         byte[] challengeBytes = new byte[24];
         random.nextBytes(challengeBytes);
         return Base64.getEncoder().encodeToString(challengeBytes);
     }
 
-    public static String md5Hash(String input) {
+    protected static String md5Hash(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));

@@ -5,10 +5,10 @@ import com.p2ppayment.security.RSA;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 
-public class RSAServerSide implements IauthProcess{
-    private BufferedReader in;
-    private PrintWriter out;
-    RSA.PublicKey publicKey;
+public class RSAServerSide extends RSA implements IauthProcess {
+    private final BufferedReader in;
+    private final PrintWriter out;
+    private final RSA.PublicKey publicKey;
 
     public RSAServerSide(BufferedReader in, PrintWriter out, RSA.PublicKey publicKey) {
         this.in = in;
@@ -17,7 +17,7 @@ public class RSAServerSide implements IauthProcess{
     }
 
     /**
-     * Gera uma challenge e envia ela ao usuário que quer autenticar.
+     * Gera uma challenge e envia ela ao utilizador que quer autenticar.
      * Recebe o AUTH_RESPONSE com um hash md5 da challenge enviada
      * @return Um booleano e envia o AUTH_SUCESS para o
      */

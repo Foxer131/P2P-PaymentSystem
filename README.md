@@ -46,7 +46,7 @@ O projeto está estruturado numa arquitetura de 3 camadas para garantir a separa
 3.  Descarregue o ficheiro `gson.jar` e coloque-o numa pasta `lib/`.
 4.  Compile o projeto (a partir da raiz do projeto):
     ```
-    javac -cp "bin;lib/*" -d bin src/com/p2ppayment/**/*.java
+     javac -cp "lib/*" -d out (Get-ChildItem -Recurse -Filter "*.java" src | ForEach-Object { $_.FullName })
     ```
 
 ### Execução
@@ -56,29 +56,29 @@ Todos os comandos são executados a partir da pasta raiz do projeto.
 **1. Gerar Chaves (Primeira vez):**
 
 ```
-java -cp "bin;lib/*" com.p2ppayment.Main <nome_utilizador> gerar-chaves
+java -cp "out;lib/*" com.p2ppayment.Main <nome_utilizador> gerar-chaves
 ```
 
 **2. Iniciar um Recetor de Pagamentos:**
 
 ```
-java -cp "bin;lib/*" com.p2ppayment.Main <nome_utilizador> receber --port 9090
+java -cp "out;lib/*" com.p2ppayment.Main <nome_utilizador> receber --port 9090
 ```
 
 **3. Iniciar um Anfitrião de Troca:**
 
 ```
-java -cp "bin;lib/*" com.p2ppayment.Main <nome_utilizador> troca --oferecer-bem "Item" --pedir-valor 100
+java -cp "out;lib/*" com.p2ppayment.Main <nome_utilizador> troca --oferecer-bem "Item" --pedir-valor 100
 ```
 
 **4. Enviar um Pagamento (com chave RSA):**
 
 ```
-java -cp "bin;lib/*" com.p2ppayment.Main <seu_utilizador> enviar --destino <outro_utilizador>@localhost:9090 --valor 50 --chave <seu_utilizador>.key
+java -cp "out;lib/*" com.p2ppayment.Main <seu_utilizador> enviar --destino <outro_utilizador>@localhost:9090 --valor 50 --chave <seu_utilizador>.key
 ```
 
 **5. Juntar-se a uma Troca (com chave RSA):**
 
 ```
-java -cp "bin;lib/*" com.p2ppayment.Main <seu_utilizador> troca --destino <outro_utilizador>@localhost:6050 --oferecer-valor 100 --pedir-bem "Item" --chave <seu_utilizador>.key
+java -cp "out;lib/*" com.p2ppayment.Main <seu_utilizador> troca --destino <outro_utilizador>@localhost:6050 --oferecer-valor 100 --pedir-bem "Item" --chave <seu_utilizador>.key
 ```

@@ -1,6 +1,7 @@
 package com.p2ppayment.network.transaction;
 
 import com.p2ppayment.domain.Carteira;
+import com.p2ppayment.network.BlankCardSender;
 import com.p2ppayment.network.authprocess.AuthenticationHandler;
 
 import java.io.BufferedReader;
@@ -9,7 +10,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Locale;
 
-public class PaymentSender {
+public class PaymentSender extends BlankCardSender {
 
     private final Carteira carteira;
 
@@ -17,8 +18,7 @@ public class PaymentSender {
         this.carteira = carteira;
     }
 
-    public void enviar(String destinoHost, int destinoPort, double valor, String nomeRemetente, String caminhoChavePrivada
-    ) {
+    public void enviar(String destinoHost, int destinoPort, double valor, String nomeRemetente, String caminhoChavePrivada) {
         if (carteira.getSaldo() < valor) {
             System.err.println("Falha: Saldo insuficiente. Saldo atual: " + carteira.getSaldo());
             return;
@@ -30,10 +30,8 @@ public class PaymentSender {
             
             System.out.println("Conexão estabelecida com " + destinoHost + ":" + destinoPort);
 
-            boolean autenticado = AuthenticationHandler.handleClientAuthentication(nomeRemetente, caminhoChavePrivada, in, out);
-            if (!autenticado) {
+            if (!performAuthentication(in, out, nomeRemetente, caminhoChavePrivada)) {
                 System.err.println("Falha na autenticação. A fechar conexão.");
-                socket.close();
                 return;
             }
 

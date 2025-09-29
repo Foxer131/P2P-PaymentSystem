@@ -1,10 +1,7 @@
 package com.p2ppayment.filegenerators;
 
-import com.p2ppayment.fileparsers.TransacaoCobranca;
+import com.p2ppayment.transactiontypes.TransacaoCobranca;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +12,7 @@ import java.util.List;
 
 public class cnab400Generator implements FileGenerator<TransacaoCobranca> {
 
-    public cnab400Generator(String csvFilePath) {}
+    public cnab400Generator() {}
 
     @Override
     public void generate(List<TransacaoCobranca> transacoes, String ficheiroSaida) throws IOException {

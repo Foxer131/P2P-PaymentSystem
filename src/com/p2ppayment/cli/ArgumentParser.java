@@ -45,7 +45,7 @@ public class ArgumentParser {
                     if (i + 1 < args.length) this.value = Double.parseDouble(args[++i]);
                     break;
                 case "--port":
-                     if (i + 1 < args.length && this.port != -1) this.port = Integer.parseInt(args[++i]);
+                     if (i + 1 < args.length && this.port == -1) this.port = Integer.parseInt(args[++i]);
                     break;
                 case "--chave":
                     if (i + 1 < args.length) this.privateKeyPath = args[++i];

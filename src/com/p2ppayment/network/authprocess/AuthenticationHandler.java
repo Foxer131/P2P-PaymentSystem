@@ -1,15 +1,15 @@
 package com.p2ppayment.network.authprocess;
 
 import com.p2ppayment.security.RSA;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Map;
 import java.util.Scanner;
 
 public class AuthenticationHandler {
-    public static boolean handleServerAuthentication(String handshake, BufferedReader in, PrintWriter out, Map<String, RSA.PublicKey> chavesPublicasConhecidas, Socket clientSocket) {
+    public static boolean handleServerAuthentication(String handshake, BufferedReader in, PrintWriter out, Socket clientSocket) {
         if (handshake == null) 
                 return false;
 
@@ -24,11 +24,11 @@ public class AuthenticationHandler {
                 if (handshakeParts.length > 1) {
                     nomeRemetente = handshakeParts[1];
                     System.out.println("Recebido pedido de autenticação RSA de: " + nomeRemetente);
-                    RSA.PublicKey chavePublicaRemetente = chavesPublicasConhecidas.get(nomeRemetente);
-                    if (chavePublicaRemetente != null) {
-                        IauthProcess authenticator = new RSAServerSide(in, out, chavePublicaRemetente);
+                    try {
+                        RSA.PublicKey chavePublicaRemetente = RSA.loadPublicKey("keys/" + nomeRemetente);
+                        RSAServerSide authenticator = new RSAServerSide(in, out, chavePublicaRemetente);
                         autenticado = authenticator.authenticate();
-                    } else {
+                    } catch (Exception e) {
                         System.err.println("Chave pública para '" + nomeRemetente + "' não encontrada. Recusando autenticação.");
                     }
                 }
@@ -39,18 +39,17 @@ public class AuthenticationHandler {
             }
         }
 
-            if (!autenticado) {
-                System.out.println("Conexão não autenticada/rejeitada. A fechar.");
-                return false;
-            }
-        return autenticado;
+        if (!autenticado) {
+            System.out.println("Conexão não autenticada/rejeitada.");
+            return false;
+        }
+        return true;
     }
 
     public static boolean handleClientAuthentication(String nomeRemetente, String caminhoChavePrivada, BufferedReader in, PrintWriter out) {
         boolean autenticado = false;
         if (caminhoChavePrivada != null) {
             out.println("RSA_AUTH_REQUEST|" + nomeRemetente);
-            
             try {
                 RSA.PrivateKey minhaChavePrivada = RSA.loadPrivateKey(caminhoChavePrivada);
                 IauthProcess authenticator = new RSAClientSide(in, out, minhaChavePrivada);

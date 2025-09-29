@@ -1,22 +1,19 @@
 package com.p2ppayment.network.transaction;
 
 import com.p2ppayment.domain.Carteira;
-import com.p2ppayment.security.RSA;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Map;
 
 public class PaymentListener implements Runnable {
 
     private final int port;
     private final Carteira carteira;
-    private final Map<String, RSA.PublicKey> chavesPublicasConhecidas;
 
-    public PaymentListener(Carteira carteira, int port, Map<String, RSA.PublicKey> chavesPublicas) {
+    public PaymentListener(Carteira carteira, int port) {
         this.carteira = carteira;
         this.port = port;
-        this.chavesPublicasConhecidas = chavesPublicas;
     }
 
     @Override
@@ -27,7 +24,7 @@ public class PaymentListener implements Runnable {
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 
-                TransactionHandler handler = new TransactionHandler(clientSocket, this.carteira, this.chavesPublicasConhecidas);
+                PaymentHandler handler = new PaymentHandler(clientSocket, this.carteira);
                 new Thread(handler).start();
             }
         } catch (IOException e) {

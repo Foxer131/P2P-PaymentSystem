@@ -5,10 +5,10 @@ import com.p2ppayment.security.RSA;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
 
-public class RSAClientSide implements IauthProcess {
+public class RSAClientSide extends RSA implements IauthProcess {
     private final BufferedReader in;
     private final PrintWriter out;
-    RSA.PrivateKey privateKey;
+    private final RSA.PrivateKey privateKey;
 
     public RSAClientSide(BufferedReader in, PrintWriter out, RSA.PrivateKey privateKey) {
         this.in = in;
@@ -32,7 +32,7 @@ public class RSAClientSide implements IauthProcess {
             }
             String encryptedChallengeBase64 = challengeMessage.split("\\|")[1];
 
-            String decryptedChallenge = RSA.decrypt(encryptedChallengeBase64, this.privateKey);
+            String decryptedChallenge = decrypt(encryptedChallengeBase64, this.privateKey);
 
             String responseHash = RSAUtils.md5Hash(decryptedChallenge);
             out.println("AUTH_RESPONSE|" + responseHash);

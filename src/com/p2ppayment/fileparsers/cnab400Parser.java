@@ -1,5 +1,6 @@
 package com.p2ppayment.fileparsers;
 
+import com.p2ppayment.transactiontypes.TransacaoCobranca;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;

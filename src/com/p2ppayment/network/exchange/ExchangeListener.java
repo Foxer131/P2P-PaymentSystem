@@ -6,9 +6,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 
-public class ExchangeListener implements Runnable {
+public class ExchangeListener {
     private final Carteira carteira;
-    private final Map<String, RSA.PublicKey> chavesPublicasConhecidas;
     private final int port = 6050;
 
     // A proposta do anfitrião, guardada como parâmetros individuais.
@@ -17,17 +16,15 @@ public class ExchangeListener implements Runnable {
     private final String anfitriaoPedeBem;
     private final double anfitriaoPedeValor;
 
-    public ExchangeListener(Carteira carteira, Map<String, RSA.PublicKey> chavesPublicas, 
-                            String oferecerBem, double oferecerValor, String pedirBem, double pedirValor) {
+    public ExchangeListener(Carteira carteira, String oferecerBem,
+                            double oferecerValor, String pedirBem, double pedirValor) {
         this.carteira = carteira;
-        this.chavesPublicasConhecidas = chavesPublicas;
         this.anfitriaoOfereceBem = oferecerBem;
         this.anfitriaoOfereceValor = oferecerValor;
         this.anfitriaoPedeBem = pedirBem;
         this.anfitriaoPedeValor = pedirValor;
     }
 
-    @Override
     public void run() {
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
             System.out.println("Servidor de trocas iniciado. A ouvir na porta: " + this.port);
@@ -36,8 +33,7 @@ public class ExchangeListener implements Runnable {
 
             ExchangeHandler handler = new ExchangeHandler(
                     clientSocket, 
-                    this.carteira, 
-                    this.chavesPublicasConhecidas,
+                    this.carteira,
                     this.anfitriaoOfereceBem,
                     this.anfitriaoOfereceValor,
                     this.anfitriaoPedeBem,

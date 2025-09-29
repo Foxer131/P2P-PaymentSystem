@@ -53,7 +53,7 @@ public class RSA {
      * @param key A chave pública a ser usada.
      * @return A mensagem criptografada, codificada em Base64 para fácil transmissão.
      */
-    public static String encrypt(String plainText, PublicKey key) {
+    protected static String encrypt(String plainText, PublicKey key) {
         BigInteger message = new BigInteger(plainText.getBytes(StandardCharsets.UTF_8));
         BigInteger encrypted = message.modPow(key.e(), key.n());
         return Base64.getEncoder().encodeToString(encrypted.toByteArray());
@@ -65,7 +65,7 @@ public class RSA {
      * @param key A chave privada a ser usada.
      * @return A mensagem original em texto plano.
      */
-    public static String decrypt(String cipherText, PrivateKey key) {
+    protected static String decrypt(String cipherText, PrivateKey key) {
         byte[] decodedBytes = Base64.getDecoder().decode(cipherText);
         BigInteger encrypted = new BigInteger(decodedBytes);
         BigInteger decrypted = encrypted.modPow(key.d(), key.n());
@@ -75,7 +75,7 @@ public class RSA {
     /**
      * Salva um par de chaves em ficheiros.
      * @param keyPair O par de chaves a ser salvo.
-     * @param username O nome de utilizador, usado para nomear os ficheiros.
+     * @param path O caminho da chave que deve ser carregada..
      * @throws java.io.IOException Se ocorrer um erro ao escrever nos ficheiros.
      */
     public static void saveKeyPair(KeyPair keyPair, String path) throws java.io.IOException {
@@ -88,8 +88,8 @@ public class RSA {
     }
 
     /**
-     * Carrega uma chave pública de um ficheiro .pub.
-     * @param username O nome do utilizador cuja chave deve ser carregada.
+     * Carrega uma chave pública de um ficheiro.pub.
+     * @param path O caminho da chave que deve ser carregada.
      * @return Um objeto PublicKey.
      * @throws java.io.IOException Se ocorrer um erro ao ler o ficheiro.
      */
@@ -103,7 +103,7 @@ public class RSA {
 
     /**
      * Carrega uma chave privada de um ficheiro .key.
-     * @param username O nome do utilizador cuja chave deve ser carregada.
+     * @param keyPath O caminho da chave que deve ser carregada.
      * @return Um objeto PrivateKey.
      * @throws java.io.IOException Se ocorrer um erro ao ler o ficheiro.
      */

@@ -10,11 +10,10 @@ import com.p2ppayment.config.UserConfig;
 import com.p2ppayment.domain.Pessoa;
 import com.p2ppayment.filegenerators.cnab400Generator;
 import com.p2ppayment.fileparsers.FileParser;
-import com.p2ppayment.fileparsers.TransacaoCobranca;
+import com.p2ppayment.transactiontypes.TransacaoCobranca;
 import com.p2ppayment.fileparsers.cnab400Parser;
 import com.p2ppayment.network.transaction.PaymentListener;
 import com.p2ppayment.network.transaction.PaymentSender;
-import com.p2ppayment.security.RSA;
 
 import java.util.*;
 
@@ -24,7 +23,6 @@ import com.p2ppayment.network.exchange.ExchangeListener;
 public class Main {
 
     private static final Map<String, Pessoa> utilizadoresConhecidos = new HashMap<>();
-    private static final Map<String, RSA.PublicKey> chavesPublicasConhecidas = new HashMap<>();
 
     public static void main(String[] args) {
         inicializarUtilizadores();
@@ -45,7 +43,7 @@ public class Main {
                     executarEnvio(utilizadorAtual, parser);
                 case "receber" -> {
                     System.out.println("--- A INICIAR MODO RECETOR PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
-                    PaymentListener listener = new PaymentListener(utilizadorAtual.getCarteira(), parser.getPort(), Main.chavesPublicasConhecidas);
+                    PaymentListener listener = new PaymentListener(utilizadorAtual.getCarteira(), parser.getPort());
                     new Thread(listener).start();
                 }
                 case "gerar-chaves" ->
@@ -60,16 +58,18 @@ public class Main {
                         double pedirValor = parser.getPedirValor();
 
                         ExchangeListener listener = new ExchangeListener(
-                            utilizadorAtual.getCarteira(), 
-                            chavesPublicasConhecidas,
+                            utilizadorAtual.getCarteira(),
                             oferecerBem,
                             oferecerValor,
                             pedirBem,
                             pedirValor
                         );
-                        new Thread(listener).start();
+                        listener.run();
                     } else {
                         // Se a flag --destino for usada, o utilizador está a juntar-se a uma troca.
+                        if (parser.getPrivateKeyPath() == null && !passwordAuth(utilizadorAtual, parser)) {
+                            return;
+                        }
                         executarTroca(utilizadorAtual, parser);
                     }
                 }
@@ -81,8 +81,7 @@ public class Main {
 
                     try {
                         List<TransacaoCobranca> transacoes = lerCobrancasDeCsv(parser.getInputFilePath());
-
-                        cnab400Generator cnab = new cnab400Generator(parser.getInputFilePath());
+                        cnab400Generator cnab = new cnab400Generator();
                         try {
                             cnab.generate(transacoes, "cnab400Remessa.txt");
                         } catch (IOException ex) {
@@ -139,15 +138,6 @@ public class Main {
                 utilizadoresConhecidos.put(novoUtilizador.getNome(), novoUtilizador);
             }
 
-            for (String nome : utilizadoresConhecidos.keySet()) {
-                try {
-                    RSA.PublicKey pubKey = RSA.loadPublicKey("keys/" + nome);
-                    chavesPublicasConhecidas.put(nome, pubKey);
-                } catch (Exception e) {
-                    System.out.println("Aviso: Não foi possível carregar a chave pública para '" + nome + "'.");
-                }
-            }
-
         } catch (java.io.FileNotFoundException e) {
             System.err.println("ERRO CRÍTICO: O ficheiro de configuração '" +  JsonFile + "' não foi encontrado. A encerrar.");
             System.exit(1);
@@ -176,15 +166,8 @@ public class Main {
     private static void executarEnvio(Pessoa utilizadorAtual, ArgumentParser parser) {
         String caminhoChavePrivada = parser.getPrivateKeyPath();
 
-        if (caminhoChavePrivada == null) {
-            System.out.printf("Autenticação por senha para '%s': ", utilizadorAtual.getNome());
-            Scanner scanner = new Scanner(System.in);
-            String inputPassword = scanner.nextLine();
-            if (!utilizadorAtual.autenticarComSenha(inputPassword)) {
-                System.err.println("Autenticação por senha falhou. A encerrar.");
-                return;
-            }
-            System.out.println("Autenticação bem-sucedida.");
+        if (caminhoChavePrivada == null && !passwordAuth(utilizadorAtual, parser)) {
+            return;
         }
 
         PaymentSender sender = new PaymentSender(utilizadorAtual.getCarteira());
@@ -195,6 +178,18 @@ public class Main {
                 utilizadorAtual.getNome(),
                 caminhoChavePrivada
         );
+    }
+
+    private static boolean passwordAuth(Pessoa utilizadorAtual, ArgumentParser parser) {
+            System.out.printf("Autenticação por senha para '%s': ", utilizadorAtual.getNome());
+            Scanner scanner = new Scanner(System.in);
+            String inputPassword = scanner.nextLine();
+            if (!utilizadorAtual.autenticarComSenha(inputPassword)) {
+                System.err.println("Autenticação por senha falhou. A encerrar.");
+                return false;
+            }
+            System.out.println("Autenticação bem-sucedida.");
+            return true;
     }
 
     private static List<TransacaoCobranca> lerCobrancasDeCsv(String filePath) throws IOException {
