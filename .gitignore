@@ -1,0 +1,17 @@
+# Ficheiros compilados
+/bin/
+/out/
+
+# Ficheiros do IntelliJ IDEA
+/.idea/
+*.iml
+
+# Ficheiros de log
+*.log
+
+# Ficheiros gerados localmente
+*.key
+*.pub
+*.txt
+*.csv
+*.json
