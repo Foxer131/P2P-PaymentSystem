@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class cnab400Generator implements FileGenerator<TransacaoCobranca> {
+public class cnab400Generator extends cnabBlank implements FileGenerator<TransacaoCobranca> {
 
     public cnab400Generator() {}
 
@@ -109,20 +109,6 @@ public class cnab400Generator implements FileGenerator<TransacaoCobranca> {
         trailer.replace(394, 400, padLeft(String.valueOf(sequencial), 6));
 
         return trailer.toString();
-    }
-
-    private String padRight(String input, int length) {
-        if (input.length() > length) {
-            return input.substring(0, length);
-        }
-        return String.format("%-" + length + "s", input);
-    }
-
-    private String padLeft(String input, int length) {
-        if (input.length() > length) {
-            return input.substring(0, length);
-        }
-        return String.valueOf('0').repeat(length - input.length()) + input;
     }
 }
 

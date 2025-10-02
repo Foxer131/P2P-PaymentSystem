@@ -8,8 +8,11 @@ import java.lang.reflect.Type;
 import com.p2ppayment.cli.ArgumentParser;
 import com.p2ppayment.config.UserConfig;
 import com.p2ppayment.domain.Pessoa;
+import com.p2ppayment.filegenerators.Cnab240Generator;
+import com.p2ppayment.filegenerators.FileGenerator;
 import com.p2ppayment.filegenerators.cnab400Generator;
 import com.p2ppayment.fileparsers.FileParser;
+import com.p2ppayment.fileparsers.cnab240Parser;
 import com.p2ppayment.transactiontypes.TransacaoCobranca;
 import com.p2ppayment.fileparsers.cnab400Parser;
 import com.p2ppayment.network.transaction.PaymentListener;
@@ -19,6 +22,7 @@ import java.util.*;
 
 import com.p2ppayment.network.exchange.ExchangeSender;
 import com.p2ppayment.network.exchange.ExchangeListener;
+import com.p2ppayment.transactiontypes.TransacaoPagamento;
 
 public class Main {
 
@@ -106,6 +110,34 @@ public class Main {
                         }
                     } catch (Exception e) {
                         System.err.println("Erro ao ler arquivo: " + e.getMessage());
+                    }
+                }
+                case "gera-pagamento" -> {
+                    if (parser.getInputFilePath() == null) {
+                        System.out.println("Erro: O comando 'gera-pagamanto' requer a flag --arquivo <caminho_csv>");
+                    }
+                    System.out.println("Lendo arquivo CNAB240.");
+                    try {
+                        List<TransacaoPagamento> transacao = lerPagamentoDeCsv(parser.getInputFilePath());
+                        Cnab240Generator gen = new Cnab240Generator();
+                        gen.generate(transacao, "cnab240Remessa.txt");
+                    } catch (IOException e) {
+                        e.getMessage();
+                    }
+                }
+                case "processa-pagamento" -> {
+                    if (parser.getInputFilePath() == null) {
+                        System.out.println("Erro: O comando 'processa-pagamento' requer a flag --arquivo <caminho_cnab240>");
+                    }
+                    try {
+                        cnab240Parser fParser = new cnab240Parser(parser.getInputFilePath());
+                        List<TransacaoPagamento> l = fParser.parse();
+                        for (TransacaoPagamento t : l) {
+                            System.out.printf("Pagamento N.º: %s | Favorecido: %s | Valor: %.2f%n",
+                                    t.seuNumero(), t.nomeFavorecido(), t.valor());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Erro ao ler arquivo: " + e.getMessage());
                     }
                 }
                 default -> {
@@ -212,5 +244,29 @@ public class Main {
             }
         }
         return cobrancas;
+    }
+
+    private static List<TransacaoPagamento> lerPagamentoDeCsv(String filePath) throws IOException {
+        List<TransacaoPagamento> pagamentos = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            br.readLine(); // Pula a linha do cabeçalho
+            String linha;
+            while ((linha = br.readLine()) != null) {
+                String[] dados = linha.split(",");
+                // Usa o padrão Builder para criar o objeto TransacaoPagamento
+                TransacaoPagamento p = new TransacaoPagamento.Builder()
+                        .nomeFavorecido(dados[0])
+                        .bancoFavorecido(dados[1])
+                        .agenciaFavorecida(dados[2])
+                        .contaFavorecida(dados[3])
+                        .cpfFavorecido(dados[4])
+                        .valor(Double.parseDouble(dados[5]))
+                        .dataPagamento(dados[6])
+                        .seuNumero(dados[7])
+                        .build();
+                pagamentos.add(p);
+            }
+        }
+        return pagamentos;
     }
 }
