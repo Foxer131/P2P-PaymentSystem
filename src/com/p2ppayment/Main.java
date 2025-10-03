@@ -2,24 +2,21 @@ package com.p2ppayment;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 import java.io.*;
 import java.lang.reflect.Type;
 import com.p2ppayment.cli.ArgumentParser;
 import com.p2ppayment.config.UserConfig;
 import com.p2ppayment.domain.Pessoa;
 import com.p2ppayment.filegenerators.Cnab240Generator;
-import com.p2ppayment.filegenerators.FileGenerator;
 import com.p2ppayment.filegenerators.cnab400Generator;
+import com.p2ppayment.fileparsers.CsvParser;
 import com.p2ppayment.fileparsers.FileParser;
 import com.p2ppayment.fileparsers.cnab240Parser;
 import com.p2ppayment.transactiontypes.TransacaoCobranca;
 import com.p2ppayment.fileparsers.cnab400Parser;
 import com.p2ppayment.network.transaction.PaymentListener;
 import com.p2ppayment.network.transaction.PaymentSender;
-
 import java.util.*;
-
 import com.p2ppayment.network.exchange.ExchangeSender;
 import com.p2ppayment.network.exchange.ExchangeListener;
 import com.p2ppayment.transactiontypes.TransacaoPagamento;
@@ -46,7 +43,7 @@ public class Main {
                 case "enviar" ->
                     executarEnvio(utilizadorAtual, parser);
                 case "receber" -> {
-                    System.out.println("--- A INICIAR MODO RECETOR PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
+                    System.out.println("--- INICIANDO MODO RECETOR PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
                     PaymentListener listener = new PaymentListener(utilizadorAtual.getCarteira(), parser.getPort());
                     new Thread(listener).start();
                 }
@@ -54,7 +51,7 @@ public class Main {
                     utilizadorAtual.gerarEsalvarChaves();
                 case "troca" -> {
                     if (parser.getHost() == null) {
-                        System.out.println("--- A INICIAR MODO DE ANFITRIÃO DE TROCA PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
+                        System.out.println("--- INICIANDO MODO DE ANFITRIÃO DE TROCA PARA " + utilizadorAtual.getNome().toUpperCase() + " ---");
                         
                         String oferecerBem = parser.getOferecerBem();
                         double oferecerValor = parser.getOferecerValor();
@@ -84,7 +81,7 @@ public class Main {
                     }
 
                     try {
-                        List<TransacaoCobranca> transacoes = lerCobrancasDeCsv(parser.getInputFilePath());
+                        List<TransacaoCobranca> transacoes = CsvParser.lerCobrancasDeCsv(parser.getInputFilePath());
                         cnab400Generator cnab = new cnab400Generator();
                         try {
                             cnab.generate(transacoes, "cnab400Remessa.txt");
@@ -118,7 +115,7 @@ public class Main {
                     }
                     System.out.println("Lendo arquivo CNAB240.");
                     try {
-                        List<TransacaoPagamento> transacao = lerPagamentoDeCsv(parser.getInputFilePath());
+                        List<TransacaoPagamento> transacao = CsvParser.lerPagamentoDeCsv(parser.getInputFilePath());
                         Cnab240Generator gen = new Cnab240Generator();
                         gen.generate(transacao, "cnab240Remessa.txt");
                     } catch (IOException e) {
@@ -222,51 +219,5 @@ public class Main {
             }
             System.out.println("Autenticação bem-sucedida.");
             return true;
-    }
-
-    private static List<TransacaoCobranca> lerCobrancasDeCsv(String filePath) throws IOException {
-        List<TransacaoCobranca> cobrancas = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            br.readLine(); // Pula a linha do cabeçalho
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] dados = linha.split(",");
-                // Cria um objeto TransacaoCobranca a partir dos dados do CSV.
-                TransacaoCobranca t = new TransacaoCobranca(
-                        dados[4], // nossoNumero
-                        dados[0], // nomeSacado
-                        Double.parseDouble(dados[2]), // valor
-                        dados[3], // dataVencimento
-                        dados[1], // CPF
-                        null    // status (não aplicável para remessa)
-                );
-                cobrancas.add(t);
-            }
-        }
-        return cobrancas;
-    }
-
-    private static List<TransacaoPagamento> lerPagamentoDeCsv(String filePath) throws IOException {
-        List<TransacaoPagamento> pagamentos = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            br.readLine(); // Pula a linha do cabeçalho
-            String linha;
-            while ((linha = br.readLine()) != null) {
-                String[] dados = linha.split(",");
-                // Usa o padrão Builder para criar o objeto TransacaoPagamento
-                TransacaoPagamento p = new TransacaoPagamento.Builder()
-                        .nomeFavorecido(dados[0])
-                        .bancoFavorecido(dados[1])
-                        .agenciaFavorecida(dados[2])
-                        .contaFavorecida(dados[3])
-                        .cpfFavorecido(dados[4])
-                        .valor(Double.parseDouble(dados[5]))
-                        .dataPagamento(dados[6])
-                        .seuNumero(dados[7])
-                        .build();
-                pagamentos.add(p);
-            }
-        }
-        return pagamentos;
     }
 }
